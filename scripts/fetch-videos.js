@@ -1,8 +1,8 @@
 // scripts/fetch-videos.js
 // 目的：再生リストから動画のメタデータを取得し、
-//       概要欄のナンバリング行・ゲスト情報を自動抽出してJSONに保存する
+//       ナンバリング・ゲスト情報を自動抽出してJSONに保存する
 
-import 'dotenv/config'; // .envファイルの中身をprocess.envに読み込む
+import 'dotenv/config';
 import fs from 'node:fs/promises';
 
 const API_KEY = process.env.YOUTUBE_API_KEY;
@@ -69,6 +69,11 @@ async function fetchVideoDetails(videoIds) {
   return results;
 }
 
+// --- ③ ナンバリングを抽出する ---
+// 優先順位：
+//   A. 概要欄内の「#?数字 + 空白 + 文章」の行（例: "805　生活をしていきます!!"）
+//   B. 概要欄内の「#数字」だけの行（例: "#350" ← 次の行に文章が続くパターン）
+//   C. タイトル末尾の「#数字」（例: "...【答えてみた①】#024"）
 function extractNumbering(description, title) {
   const lines = description.split('\n');
 
@@ -82,31 +87,39 @@ function extractNumbering(description, title) {
     if (matchNumberOnly) return matchNumberOnly[1];
   }
 
-  // 概要欄で見つからなかった場合、最後の手段としてタイトル末尾の「#数字」を探す
-  // 例: "【マシュマロ】お互いの第一印象は？【答えてみた①】#024"
   const titleMatch = title.trim().match(/#(\d+)$/);
   if (titleMatch) return titleMatch[1];
 
-  return null;
+  return null; // どれにも該当しなければナンバリングなし
 }
 
 // --- ④ 概要欄からゲスト情報を抽出する ---
+// 【ゲスト出演】のような見出しの有無に関わらず、
+// 概要欄全体から 🔶 で始まる行（メインゲスト）と ↪ で始まる行（サブメンバー）を拾う
 function extractGuests(description) {
-  const sectionMatch = description.match(/【ゲスト出演】([\s\S]*?)(【|$)/);
-  if (!sectionMatch) return [];
-
-  const block = sectionMatch[1];
-  const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = description.split('\n').map(l => l.trim()).filter(Boolean);
 
   const guests = [];
   let current = null;
 
+  // 名前の行からURLやSNSアイコンを取り除き、名前だけを残す
+  function cleanName(rawName) {
+    return rawName
+      .replace(/https?:\/\/\S+/g, '') // URL除去
+      .replace(/[🗞🎬]/g, '')          // SNSアイコン除去
+      .trim();
+  }
+
   for (const line of lines) {
     if (line.startsWith('🔶')) {
-      current = { name: line.replace('🔶', '').trim(), members: [] };
-      guests.push(current);
+      const name = cleanName(line.replace('🔶', ''));
+      if (name) {
+        current = { name, members: [] };
+        guests.push(current);
+      }
     } else if (line.startsWith('↪') && current) {
-      current.members.push(line.replace('↪', '').trim());
+      const member = cleanName(line.replace('↪', ''));
+      if (member) current.members.push(member);
     }
   }
 
@@ -136,11 +149,12 @@ async function main() {
       skipped++;
       skippedList.push({ title, description });
       // ここではcontinueせず、numbering: null のまま videos に含める
+      // （後工程のmerge-and-build.jsで、スプシのnumbering_confirmedがあれば拾えるようにするため）
     }
 
     videos.push({
       videoId: item.id,
-      numbering, // nullの場合もある。スプシ側のnumbering_confirmedで後から埋める
+      numbering, // nullの場合もある
       title,
       thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
       url: `https://www.youtube.com/watch?v=${item.id}`,
@@ -149,14 +163,12 @@ async function main() {
     });
   }
 
-  console.log(`→ ${videos.length} 件を採用、${skipped} 件はナンバリングなしでスキップしました`);
+  console.log(`→ ${videos.length - skipped} 件はナンバリングあり、${skipped} 件はナンバリングなし（要手動補完 or 対象外）`);
 
-  await fs.mkdir('data', { recursive: true });
-  await fs.writeFile('data/videos-raw.json', JSON.stringify(videos, null, 2), 'utf-8');
-  console.log('✅ data/videos-raw.json に保存しました');
-  // 重複ナンバリングのチェック
+  // 重複ナンバリングのチェック（誤検出がないか確認用）
   const numberCount = {};
   for (const v of videos) {
+    if (!v.numbering) continue; // nullは重複チェック対象外
     numberCount[v.numbering] = (numberCount[v.numbering] || 0) + 1;
   }
   const duplicates = Object.entries(numberCount).filter(([, count]) => count > 1);
@@ -168,8 +180,14 @@ async function main() {
   } else {
     console.log('✅ ナンバリングの重複はありませんでした');
   }
+
+  // 結果を保存
+  await fs.mkdir('data', { recursive: true });
+  await fs.writeFile('data/videos-raw.json', JSON.stringify(videos, null, 2), 'utf-8');
+  console.log('✅ data/videos-raw.json に保存しました');
+
   await fs.writeFile('data/skipped-debug.json', JSON.stringify(skippedList, null, 2), 'utf-8');
-  console.log(`📝 data/skipped-debug.json にスキップ分の詳細を保存しました（${skippedList.length}件）`);
+  console.log(`📝 data/skipped-debug.json にナンバリング不明分の詳細を保存しました（${skippedList.length}件）`);
 }
 
 main().catch(err => {
