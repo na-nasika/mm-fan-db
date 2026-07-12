@@ -27,8 +27,16 @@ async function main() {
   const finalVideos = [];
   let excludedNoNumbering = 0;
 
+  let excludedManually = 0;
+
   for (const video of videosRaw) {
     const override = overrides[video.videoId] || {};
+
+    // ①' 手動除外：exclude列にTRUEと書かれていたら、問答無用でスキップ
+    if (override.exclude?.toUpperCase() === 'TRUE') {
+      excludedManually++;
+      continue;
+    }
 
     // ① ナンバリング：confirmed優先、なければ自動、どちらもなければ除外
     const numbering = override.numbering_confirmed || video.numbering || null;
@@ -62,7 +70,7 @@ async function main() {
   // ナンバリングの数字順に並び替え（文字列のままだと "10" が "2" より前に来てしまうため、数値に変換して比較）
   finalVideos.sort((a, b) => Number(a.numbering) - Number(b.numbering));
 
-  console.log(`✅ 最終データ: ${finalVideos.length}件（ナンバリング不明で除外: ${excludedNoNumbering}件）`);
+  console.log(`✅ 最終データ: ${finalVideos.length}件（ナンバリング不明で除外: ${excludedNoNumbering}件、手動除外: ${excludedManually}件）`);
 
   await fs.mkdir('src/data', { recursive: true });
   await fs.writeFile(OUTPUT_FILE, JSON.stringify(finalVideos, null, 2), 'utf-8');

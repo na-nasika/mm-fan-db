@@ -1,5 +1,4 @@
 ---
-// 全ページ共通の土台（フォント読み込み・共通CSS・ヘッダー）
 const { title = 'MZM Fan Archive' } = Astro.props;
 ---
 <!doctype html>
@@ -18,8 +17,15 @@ const { title = 'MZM Fan Archive' } = Astro.props;
       --surface-hover: #262238;
       --text: #f1ecfa;
       --text-muted: #9691b3;
+
+      /* 本家イメージカラー(シアン×マゼンタ)を、夜のトーンに溶け込ませたグラデーション用 */
+      --accent-cyan: #22d3ee;
+      --accent-violet: #8b5cf6;
+      --accent-magenta: #ec4899;
+
+      /* ナンバリングバッジ専用の月明かり色（グラデーションとは別の、もう1つのサイン要素） */
       --accent-moon: #ffd166;
-      --accent-fang: #8b5cf6;
+
       --border: #2c2840;
     }
 
@@ -46,7 +52,7 @@ const { title = 'MZM Fan Archive' } = Astro.props;
       letter-spacing: 0.08em;
       font-size: clamp(1.8rem, 5vw, 2.6rem);
       margin: 0;
-      background: linear-gradient(90deg, var(--accent-moon), var(--accent-fang));
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet), var(--accent-magenta));
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
@@ -64,9 +70,8 @@ const { title = 'MZM Fan Archive' } = Astro.props;
       padding: 1.5rem;
     }
 
-    /* 見えるフォーカスリング（キーボード操作対応） */
     a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
-      outline: 2px solid var(--accent-moon);
+      outline: 2px solid var(--accent-cyan);
       outline-offset: 2px;
     }
 

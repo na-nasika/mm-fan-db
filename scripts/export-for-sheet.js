@@ -27,14 +27,15 @@ async function main() {
   // 見る専用の列(_ref)と、実際に手入力する列(_confirmed等)を両方並べる
   const headers = [
     'videoId',
-    'numbering_ref',   // 参照用：自動抽出されたナンバリング
-    'title_ref',       // 参照用：タイトル
-    'guest_auto_ref',  // 参照用：自動抽出されたゲスト候補
-    'numbering_confirmed', // 手入力：ナンバリングが漏れていた場合の補完
-    'guest_confirmed',     // 手入力：ゲスト名の確定値
-    'category_confirmed',  // 手入力：カテゴリ
-    'tags',                 // 手入力：検索用の自由記述
-    'memo',                 // 手入力：備考
+    'numbering_ref',
+    'title_ref',
+    'guest_auto_ref',
+    'numbering_confirmed',
+    'guest_confirmed',
+    'category_confirmed',
+    'tags',
+    'exclude', // TRUE と書くと、その動画をサイトから除外する
+    'memo',
   ];
 
   const lines = [headers.join(',')];
@@ -45,11 +46,12 @@ async function main() {
       v.numbering || '',
       v.title,
       formatGuestsAuto(v.guests_auto),
-      '', // numbering_confirmed（空欄）
-      '', // guest_confirmed（空欄）
-      '', // category_confirmed（空欄）
-      '', // tags（空欄）
-      '', // memo（空欄）
+      '', // numbering_confirmed
+      '', // guest_confirmed
+      '', // category_confirmed
+      '', // tags
+      '', // exclude ← この行を追加
+      '', // memo
     ];
     lines.push(row.map(csvEscape).join(','));
   }
