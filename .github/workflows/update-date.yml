@@ -1,0 +1,43 @@
+name: Update Data
+
+on:
+  workflow_dispatch:   # GitHubの画面から手動で「実行」ボタンを押せるようにする
+
+permissions:
+  contents: write       # このワークフローがリポジトリに変更を書き戻せるようにする
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリの内容を取得
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 依存パッケージをインストール
+        run: npm ci
+
+      - name: ① 動画メタデータを取得
+        run: node scripts/fetch-videos.js
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+
+      - name: ② スプシ用テンプレートを生成
+        run: node scripts/export-for-sheet.js
+
+      - name: ③ スプシ(overrides)の内容を取得
+        run: node scripts/fetch-overrides.js
+
+      - name: ④ 最終データを生成
+        run: node scripts/merge-and-build.js
+
+      - name: ⑤ 変更があればコミット・プッシュ
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ src/data/
+          git diff --staged --quiet && echo "変更なし" || (git commit -m "自動データ更新" && git push)
