@@ -2,7 +2,6 @@
 import Base from '../layouts/Base.astro';
 import videos from '../data/videos.json';
 
-// 全動画のカテゴリ配列を1つに展開してから、重複なく取り出す
 const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
 ---
 <Base title="MZM Fan Archive">
@@ -14,16 +13,16 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       aria-label="動画を検索"
     />
     <div class="controls-row">
-      <div class="category-dropdown">
-        <button type="button" id="category-toggle" class="category-toggle" aria-expanded="false">
-          カテゴリで絞り込み <span id="category-count"></span>
+      <div class="dropdown">
+        <button type="button" id="category-toggle" class="dropdown-toggle" aria-expanded="false">
+          <span>カテゴリ<span id="category-count"></span></span>
           <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
-        <div id="category-panel" class="category-panel" hidden>
+        <div id="category-panel" class="dropdown-panel" hidden>
           {categories.map(c => (
-            <label class="category-option">
+            <label class="dropdown-option">
               <input type="checkbox" class="category-checkbox" value={c} />
               {c}
             </label>
@@ -31,10 +30,22 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
         </div>
       </div>
 
-      <select id="sort-select" aria-label="並び替え">
-        <option value="asc">番号: 古い順</option>
-        <option value="desc">番号: 新しい順</option>
-      </select>
+      <div class="dropdown">
+        <button type="button" id="sort-toggle" class="dropdown-toggle" aria-expanded="false">
+          <span id="sort-label">番号: 古い順</span>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div id="sort-panel" class="dropdown-panel" hidden>
+          <label class="dropdown-option">
+            <input type="radio" name="sort" class="sort-radio" value="asc" checked /> 番号: 古い順
+          </label>
+          <label class="dropdown-option">
+            <input type="radio" name="sort" class="sort-radio" value="desc" /> 番号: 新しい順
+          </label>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -73,20 +84,24 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
     ))}
   </ul>
 
-  <style>
+  <style is:global>
+    /* sticky-controlsは main の外側にあるため、ページ全体のスタイルとして定義する */
     .controls {
       position: sticky;
       top: 0;
       background: var(--bg);
-      padding: 1rem 0;
+      padding: 0.9rem 1.5rem;
       z-index: 10;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 1rem;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
     }
 
     #search-input {
       width: 100%;
-      padding: 0.8rem 1rem;
+      max-width: 900px;
+      margin: 0 auto;
+      display: block;
+      padding: 0.75rem 1rem;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--surface);
@@ -108,26 +123,17 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
     .controls-row {
       display: flex;
       gap: 0.6rem;
-      margin-top: 0.6rem;
-      position: relative;
+      margin: 0.6rem auto 0;
+      max-width: 900px;
     }
 
-    .controls-row select {
-      flex: 1;
-      padding: 0.5rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      font-family: inherit;
-    }
-
-    .category-dropdown {
+    /* --- カテゴリ・並び替え共通の開閉ドロップダウン --- */
+    .dropdown {
       position: relative;
       flex: 1;
     }
 
-    .category-toggle {
+    .dropdown-toggle {
       width: 100%;
       display: flex;
       align-items: center;
@@ -139,13 +145,15 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       background: var(--surface);
       color: var(--text);
       font-family: inherit;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      line-height: 1.4;
       cursor: pointer;
     }
 
     #category-count {
       color: var(--accent-cyan);
       font-weight: 700;
+      margin-left: 0.2rem;
     }
 
     .chevron {
@@ -153,11 +161,11 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       transition: transform 0.15s ease;
     }
 
-    .category-toggle[aria-expanded="true"] .chevron {
+    .dropdown-toggle[aria-expanded="true"] .chevron {
       transform: rotate(180deg);
     }
 
-    .category-panel {
+    .dropdown-panel {
       position: absolute;
       top: calc(100% + 4px);
       left: 0;
@@ -172,7 +180,7 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     }
 
-    .category-option {
+    .dropdown-option {
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -182,11 +190,11 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       border-radius: 6px;
     }
 
-    .category-option:hover {
+    .dropdown-option:hover {
       background: var(--surface-hover);
     }
 
-    .category-checkbox {
+    .category-checkbox, .sort-radio {
       accent-color: var(--accent-violet);
       width: 16px;
       height: 16px;
@@ -195,9 +203,11 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
     .result-count {
       color: var(--text-muted);
       font-size: 0.85rem;
-      margin: 0 0 1rem;
+      margin: 1rem 0;
     }
+  </style>
 
+  <style>
     .video-list {
       list-style: none;
       padding: 0;
@@ -312,88 +322,104 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
   </style>
 
   <script>
-    const searchInput = document.getElementById('search-input');
-    const sortSelect = document.getElementById('sort-select');
-    const list = document.getElementById('video-list');
-    const resultCount = document.getElementById('result-count');
-    const rows = Array.from(document.querySelectorAll('.video-row'));
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('search-input');
+  const list = document.getElementById('video-list');
+  const resultCount = document.getElementById('result-count');
+  const rows = Array.from(document.querySelectorAll('.video-row'));
 
-    const categoryToggle = document.getElementById('category-toggle');
-    const categoryPanel = document.getElementById('category-panel');
-    const categoryCount = document.getElementById('category-count');
-    const categoryCheckboxes = Array.from(document.querySelectorAll('.category-checkbox'));
+  function setupDropdown(toggleId, panelId) {
+    const toggle = document.getElementById(toggleId);
+    const panel = document.getElementById(panelId);
 
-    categoryToggle.addEventListener('click', () => {
-      const isOpen = categoryPanel.hidden === false;
-      categoryPanel.hidden = isOpen;
-      categoryToggle.setAttribute('aria-expanded', String(!isOpen));
+    toggle.addEventListener('click', () => {
+      const isOpen = panel.hidden === false;
+      panel.hidden = isOpen;
+      toggle.setAttribute('aria-expanded', String(!isOpen));
     });
 
     document.addEventListener('click', (e) => {
-      if (!categoryToggle.contains(e.target) && !categoryPanel.contains(e.target)) {
-        categoryPanel.hidden = true;
-        categoryToggle.setAttribute('aria-expanded', 'false');
+      if (!toggle.contains(e.target) && !panel.contains(e.target)) {
+        panel.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
       }
     });
 
-    function getSelectedCategories() {
-      return categoryCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
+    return { toggle, panel };
+  }
+
+  setupDropdown('category-toggle', 'category-panel');
+  setupDropdown('sort-toggle', 'sort-panel');
+
+  const categoryCount = document.getElementById('category-count');
+  const categoryCheckboxes = Array.from(document.querySelectorAll('.category-checkbox'));
+
+  function getSelectedCategories() {
+    return categoryCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
+  }
+
+  function updateCategoryCountLabel() {
+    const n = getSelectedCategories().length;
+    categoryCount.textContent = n > 0 ? `(${n})` : '';
+  }
+
+  function applyFilters() {
+    const keyword = searchInput.value.trim().toLowerCase();
+    const selectedCategories = getSelectedCategories();
+    let visibleCount = 0;
+
+    for (const row of rows) {
+      const haystack = [
+        row.dataset.title,
+        row.dataset.guest,
+        row.dataset.categories,
+        row.dataset.tags,
+      ].join(' ').toLowerCase();
+
+      const matchesKeyword = !keyword || haystack.includes(keyword);
+      const videoCategories = row.dataset.categories.split(',');
+      const matchesCategory =
+        selectedCategories.length === 0 ||
+        selectedCategories.some(sc => videoCategories.includes(sc));
+
+      const visible = matchesKeyword && matchesCategory;
+      row.style.display = visible ? '' : 'none';
+      if (visible) visibleCount++;
     }
 
-    function updateCategoryCountLabel() {
-      const n = getSelectedCategories().length;
-      categoryCount.textContent = n > 0 ? `(${n})` : '';
-    }
+    resultCount.textContent = `${visibleCount} 件表示中（全 ${rows.length} 件）`;
+  }
 
-    function applyFilters() {
-      const keyword = searchInput.value.trim().toLowerCase();
-      const selectedCategories = getSelectedCategories();
-      let visibleCount = 0;
-
-      for (const row of rows) {
-        const haystack = [
-          row.dataset.title,
-          row.dataset.guest,
-          row.dataset.categories,
-          row.dataset.tags,
-        ].join(' ').toLowerCase();
-
-        const matchesKeyword = !keyword || haystack.includes(keyword);
-
-        // その動画が持つカテゴリ一覧(配列)を取り出す
-        const videoCategories = row.dataset.categories.split(',');
-        // 選択中のカテゴリのうち、1つでもこの動画が持っていればOK
-        const matchesCategory =
-          selectedCategories.length === 0 ||
-          selectedCategories.some(sc => videoCategories.includes(sc));
-
-        const visible = matchesKeyword && matchesCategory;
-
-        row.style.display = visible ? '' : 'none';
-        if (visible) visibleCount++;
-      }
-
-      resultCount.textContent = `${visibleCount} 件表示中（全 ${rows.length} 件）`;
-    }
-
-    function applySort() {
-      const order = sortSelect.value;
-      const sorted = [...rows].sort((a, b) => {
-        const diff = Number(a.dataset.numbering) - Number(b.dataset.numbering);
-        return order === 'asc' ? diff : -diff;
-      });
-      sorted.forEach(row => list.appendChild(row));
-    }
-
-    searchInput.addEventListener('input', applyFilters);
-    sortSelect.addEventListener('change', applySort);
-    categoryCheckboxes.forEach(cb => {
-      cb.addEventListener('change', () => {
-        updateCategoryCountLabel();
-        applyFilters();
-      });
+  searchInput.addEventListener('input', applyFilters);
+  categoryCheckboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      updateCategoryCountLabel();
+      applyFilters();
     });
+  });
 
-    applyFilters();
-  </script>
+  const sortLabel = document.getElementById('sort-label');
+  const sortRadios = Array.from(document.querySelectorAll('.sort-radio'));
+  const sortPanel = document.getElementById('sort-panel');
+  const sortToggle = document.getElementById('sort-toggle');
+
+  function applySort() {
+    const order = sortRadios.find(r => r.checked).value;
+    sortLabel.textContent = order === 'asc' ? '番号: 古い順' : '番号: 新しい順';
+
+    const sorted = [...rows].sort((a, b) => {
+      const diff = Number(a.dataset.numbering) - Number(b.dataset.numbering);
+      return order === 'asc' ? diff : -diff;
+    });
+    sorted.forEach(row => list.appendChild(row));
+
+    sortPanel.hidden = true;
+    sortToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  sortRadios.forEach(radio => radio.addEventListener('change', applySort));
+
+  applyFilters();
+});
+</script>
 </Base>
