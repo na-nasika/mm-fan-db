@@ -1,0 +1,72 @@
+[
+  {
+    "category": "部屋回",
+    "parent": "",
+    "order": 1
+  },
+  {
+    "category": "企画",
+    "parent": "",
+    "order": 2
+  },
+  {
+    "category": "ロケ",
+    "parent": "",
+    "order": 3
+  },
+  {
+    "category": "シュークリーム",
+    "parent": "企画",
+    "order": 1
+  },
+  {
+    "category": "TRPG企画",
+    "parent": "企画",
+    "order": 2
+  },
+  {
+    "category": "絵企画",
+    "parent": "企画",
+    "order": 3
+  },
+  {
+    "category": "食べる企画",
+    "parent": "企画",
+    "order": 4
+  },
+  {
+    "category": "クイズ企画",
+    "parent": "企画",
+    "order": 5
+  },
+  {
+    "category": "ゲーム実況",
+    "parent": "企画",
+    "order": 6
+  },
+  {
+    "category": "ドッキリ",
+    "parent": "企画",
+    "order": 7
+  },
+  {
+    "category": "ドラフト会議",
+    "parent": "企画",
+    "order": 8
+  },
+  {
+    "category": "高級店シリーズ",
+    "parent": "部屋回",
+    "order": 1
+  },
+  {
+    "category": "制作裏話",
+    "parent": "部屋回",
+    "order": 2
+  },
+  {
+    "category": "ドッキリ",
+    "parent": "部屋回",
+    "order": 3
+  }
+]

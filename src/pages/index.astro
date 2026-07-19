@@ -1,8 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
-import videos from '../data/videos.json';
-
-const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
+import data from '../data/videos.json';
+const { videos, categoryTree } = data;
 ---
 <Base title="MZM Fan Archive">
   <div class="controls">
@@ -21,15 +20,38 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
           </svg>
         </button>
         <div id="category-panel" class="dropdown-panel" hidden>
-          {categories.map(c => (
-            <label class="dropdown-option">
-              <input type="checkbox" class="category-checkbox" value={c} />
-              {c}
-            </label>
+          {categoryTree.tree.map(group => (
+            <div class="category-group">
+              <label class="dropdown-option category-group-heading-option">
+                <input
+                  type="checkbox"
+                  class="category-checkbox category-checkbox-main"
+                  value={group.main}
+                  data-subs={[group.main, ...group.subs].join(',')}
+                />
+                <strong>{group.main}</strong>
+              </label>
+              {group.subs.map(c => (
+                <label class="dropdown-option dropdown-option-sub">
+                  <input type="checkbox" class="category-checkbox" value={c} />
+                  {c}
+                </label>
+              ))}
+            </div>
           ))}
+          {categoryTree.uncategorized.length > 0 && (
+            <div class="category-group">
+              {categoryTree.tree.length > 0 && <p class="category-group-heading">その他</p>}
+              {categoryTree.uncategorized.map(c => (
+                <label class="dropdown-option dropdown-option-sub">
+                  <input type="checkbox" class="category-checkbox" value={c} />
+                  {c}
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
       <div class="dropdown">
         <button type="button" id="sort-toggle" class="dropdown-toggle" aria-expanded="false">
           <span id="sort-label">番号: 古い順</span>
@@ -48,9 +70,7 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       </div>
     </div>
   </div>
-
   <p id="result-count" class="result-count"></p>
-
   <ul id="video-list" class="video-list">
     {videos.map(v => (
       <li
@@ -83,19 +103,12 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       </li>
     ))}
   </ul>
-
   <style is:global>
-    /* sticky-controlsは main の外側にあるため、ページ全体のスタイルとして定義する */
     .controls {
-      position: sticky;
-      top: 0;
       background: var(--bg);
       padding: 0.9rem 1.5rem;
-      z-index: 10;
       border-bottom: 1px solid var(--border);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
     }
-
     #search-input {
       width: 100%;
       max-width: 900px;
@@ -110,29 +123,23 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       font-family: inherit;
       transition: border-color 0.2s ease;
     }
-
     #search-input::placeholder {
       color: var(--text-muted);
     }
-
     #search-input:focus {
       outline: none;
       border-image: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta)) 1;
     }
-
     .controls-row {
       display: flex;
       gap: 0.6rem;
       margin: 0.6rem auto 0;
       max-width: 900px;
     }
-
-    /* --- カテゴリ・並び替え共通の開閉ドロップダウン --- */
     .dropdown {
       position: relative;
       flex: 1;
     }
-
     .dropdown-toggle {
       width: 100%;
       display: flex;
@@ -149,22 +156,18 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       line-height: 1.4;
       cursor: pointer;
     }
-
     #category-count {
       color: var(--accent-cyan);
       font-weight: 700;
       margin-left: 0.2rem;
     }
-
     .chevron {
       flex-shrink: 0;
       transition: transform 0.15s ease;
     }
-
     .dropdown-toggle[aria-expanded="true"] .chevron {
       transform: rotate(180deg);
     }
-
     .dropdown-panel {
       position: absolute;
       top: calc(100% + 4px);
@@ -179,7 +182,6 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       z-index: 20;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     }
-
     .dropdown-option {
       display: flex;
       align-items: center;
@@ -189,31 +191,39 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       cursor: pointer;
       border-radius: 6px;
     }
-
     .dropdown-option:hover {
       background: var(--surface-hover);
     }
-
     .category-checkbox, .sort-radio {
       accent-color: var(--accent-violet);
       width: 16px;
       height: 16px;
     }
-
+    .category-group + .category-group {
+      margin-top: 0.4rem;
+    }
+    .category-group-heading-option {
+      margin: 0.3rem 0 0.1rem;
+      font-size: 0.85rem;
+    }
+    .category-group-heading-option strong {
+      color: var(--text);
+    }
+    .dropdown-option-sub {
+      padding-left: 1.1rem;
+    }
     .result-count {
       color: var(--text-muted);
       font-size: 0.85rem;
       margin: 1rem 0;
     }
   </style>
-
   <style>
     .video-list {
       list-style: none;
       padding: 0;
       margin: 0;
     }
-
     .video-row {
       display: flex;
       align-items: center;
@@ -221,7 +231,6 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       padding: 0.9rem 0.4rem;
       border-bottom: 1px solid var(--border);
     }
-
     .thumb-wrap {
       position: relative;
       flex-shrink: 0;
@@ -233,23 +242,19 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       border: 1px solid transparent;
       transition: border-image 0.2s ease;
     }
-
     .video-row:hover .thumb-wrap {
       border-image: linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta)) 1;
     }
-
     .thumb-wrap img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
     }
-
     .video-info {
       flex: 1;
       min-width: 0;
     }
-
     .video-title {
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -261,7 +266,6 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       font-size: 0.98rem;
       color: var(--text);
     }
-
     .video-guest {
       margin: 0 0 0.3rem;
       color: var(--text-muted);
@@ -269,7 +273,6 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       white-space: normal;
       overflow-wrap: break-word;
     }
-
     .video-meta {
       margin: 0;
       display: flex;
@@ -278,7 +281,6 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       font-size: 0.78rem;
       flex-wrap: wrap;
     }
-
     .numbering-badge {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 0.9rem;
@@ -288,16 +290,13 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       background-clip: text;
       color: transparent;
     }
-
     .category-pill {
       background: var(--surface-hover);
       color: var(--text-muted);
       padding: 2px 10px;
       border-radius: 999px;
     }
-
     .date { color: var(--text-muted); }
-
     .youtube-button {
       flex-shrink: 0;
       display: inline-flex;
@@ -312,62 +311,75 @@ const categories = [...new Set(videos.flatMap(v => v.categories))].sort();
       text-decoration: none;
       white-space: nowrap;
     }
-
     .youtube-button:hover { filter: brightness(1.15); }
-
     @media (max-width: 520px) {
       .video-row { flex-wrap: wrap; }
       .youtube-button { margin-left: calc(120px + 1rem); }
     }
   </style>
-
   <script>
 document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search-input');
   const list = document.getElementById('video-list');
   const resultCount = document.getElementById('result-count');
   const rows = Array.from(document.querySelectorAll('.video-row'));
-
   function setupDropdown(toggleId, panelId) {
     const toggle = document.getElementById(toggleId);
     const panel = document.getElementById(panelId);
-
     toggle.addEventListener('click', () => {
       const isOpen = panel.hidden === false;
       panel.hidden = isOpen;
       toggle.setAttribute('aria-expanded', String(!isOpen));
     });
-
     document.addEventListener('click', (e) => {
       if (!toggle.contains(e.target) && !panel.contains(e.target)) {
         panel.hidden = true;
         toggle.setAttribute('aria-expanded', 'false');
       }
     });
-
     return { toggle, panel };
   }
-
   setupDropdown('category-toggle', 'category-panel');
   setupDropdown('sort-toggle', 'sort-panel');
-
   const categoryCount = document.getElementById('category-count');
   const categoryCheckboxes = Array.from(document.querySelectorAll('.category-checkbox'));
 
-  function getSelectedCategories() {
-    return categoryCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
+  // チェックされているものから「実際にマッチさせるカテゴリ名」の集合を作る
+  // メインチェックボックスは data-subs に配下の全カテゴリ名を持っているので展開する
+  function getMatchedCategorySet() {
+    const matched = new Set();
+    categoryCheckboxes.forEach(cb => {
+      if (!cb.checked) return;
+      if (cb.dataset.subs) {
+        cb.dataset.subs.split(',').forEach(name => matched.add(name));
+      } else {
+        matched.add(cb.value);
+      }
+    });
+    return matched;
+  }
+
+  // 同じ名前のサブカテゴリが複数のメインの下に重複表示されている場合、
+  // 片方をチェックしたらもう片方も連動してチェックする（例：「企画」の下のドッキリと「部屋回」の下のドッキリ）
+  function syncDuplicateCheckboxes(changed) {
+    if (changed.classList.contains('category-checkbox-main')) return; // メインは重複しない前提
+    categoryCheckboxes.forEach(cb => {
+      if (cb !== changed && !cb.classList.contains('category-checkbox-main') && cb.value === changed.value) {
+        cb.checked = changed.checked;
+      }
+    });
   }
 
   function updateCategoryCountLabel() {
-    const n = getSelectedCategories().length;
-    categoryCount.textContent = n > 0 ? `(${n})` : '';
+    // 重複同期後の見た目上のチェック数ではなく、「値」の種類数で数える
+    const distinctValues = new Set(categoryCheckboxes.filter(cb => cb.checked).map(cb => cb.value));
+    categoryCount.textContent = distinctValues.size > 0 ? `(${distinctValues.size})` : '';
   }
 
   function applyFilters() {
     const keyword = searchInput.value.trim().toLowerCase();
-    const selectedCategories = getSelectedCategories();
+    const matchedCategories = getMatchedCategorySet();
     let visibleCount = 0;
-
     for (const row of rows) {
       const haystack = [
         row.dataset.title,
@@ -375,50 +387,42 @@ document.addEventListener('DOMContentLoaded', () => {
         row.dataset.categories,
         row.dataset.tags,
       ].join(' ').toLowerCase();
-
       const matchesKeyword = !keyword || haystack.includes(keyword);
       const videoCategories = row.dataset.categories.split(',');
       const matchesCategory =
-        selectedCategories.length === 0 ||
-        selectedCategories.some(sc => videoCategories.includes(sc));
-
+        matchedCategories.size === 0 ||
+        videoCategories.some(vc => matchedCategories.has(vc));
       const visible = matchesKeyword && matchesCategory;
       row.style.display = visible ? '' : 'none';
       if (visible) visibleCount++;
     }
-
     resultCount.textContent = `${visibleCount} 件表示中（全 ${rows.length} 件）`;
   }
 
   searchInput.addEventListener('input', applyFilters);
   categoryCheckboxes.forEach(cb => {
     cb.addEventListener('change', () => {
+      syncDuplicateCheckboxes(cb);
       updateCategoryCountLabel();
       applyFilters();
     });
   });
-
   const sortLabel = document.getElementById('sort-label');
   const sortRadios = Array.from(document.querySelectorAll('.sort-radio'));
   const sortPanel = document.getElementById('sort-panel');
   const sortToggle = document.getElementById('sort-toggle');
-
   function applySort() {
     const order = sortRadios.find(r => r.checked).value;
     sortLabel.textContent = order === 'asc' ? '番号: 古い順' : '番号: 新しい順';
-
     const sorted = [...rows].sort((a, b) => {
       const diff = Number(a.dataset.numbering) - Number(b.dataset.numbering);
       return order === 'asc' ? diff : -diff;
     });
     sorted.forEach(row => list.appendChild(row));
-
     sortPanel.hidden = true;
     sortToggle.setAttribute('aria-expanded', 'false');
   }
-
   sortRadios.forEach(radio => radio.addEventListener('change', applySort));
-
   applyFilters();
 });
 </script>

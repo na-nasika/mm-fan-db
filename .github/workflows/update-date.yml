@@ -32,10 +32,11 @@ jobs:
         run: node scripts/export-for-sheet.js
 
       - name: ③ スプシ(overrides)の内容を取得
-        run: node scripts/fetch-overrides.js
-
-      - name: ④ 最終データを生成
-        run: node scripts/merge-and-build.js
+         run: node scripts/fetch-overrides.js
++      - name: ③' スプシ(カテゴリ設定)の内容を取得
++        run: node scripts/fetch-category-config.js
+       - name: ④ 最終データを生成
+         run: node scripts/merge-and-build.js
 
       - name: ⑤ 変更があればコミット・プッシュ
         run: |
